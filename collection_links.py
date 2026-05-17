@@ -3,55 +3,72 @@
 import requests as rq
 from bs4 import BeautifulSoup
 
-
-def collection_links(domain, url_path=""):
-    """сбор ссылок с переданной страницы"""
-    responce = rq.get(domain + url_path)
-    soup = BeautifulSoup(responce.text, "lxml")
-
-    result = [domain + url_path]
-    all_links = soup.find_all("a")
-    for link in all_links:
-        result.append(link.get("href"))
-    return result
+domain = "https://wwwww.jodi.org/"
 
 
-#
-# with open("wwwww.jodi.org.txt", "w", newline="") as file_with_links:
-#     for link in links:
-#         file_with_links.write(link + "\n")
+class Controller:
+    def __init__(self, urls: list):
+        self.queue_links: list = urls
+        self.visited_links = set()
+
+    def run(self):
+        while len(self.queue_links) > 0:
+            current_link = self.queue_links.pop(0)
+            if current_link in self.visited_links:
+                continue
+            self.visited_links.add(current_link)
+
+    def search_links(self, url):
+        soup = BeautifulSoup(rq.get(url).text, "lxml")
+        for tag_a in soup.find_all("a"):
+            self.queue_links.append(tag_a)
 
 
-def open_links(links: list[str]) -> None:
-    paths = []
-    for link in links[1:-1]:
-        paths.append(rq.get(links[0] + link))
-    return paths
+class Links:
+    def __init__(self):
+        self.links = []
+        self.used_links = set()
+
+    def get(self) -> set:
+        return set(self.links)
+
+    def add(self, link):
+        self.links.append(link)
 
 
-def main():
-    domain = "https://wwwww.jodi.org/"
-    print(open_links(collection_links(domain)))
-    for i in open_links(collection_links(domain)):
-        print(i.url)
+def get_html(domain, path_url=""):
+    responce = rq.get(domain + path_url)
+    return responce.text
 
+
+def searching_links_and_add(html):
+    soup = BeautifulSoup(html, "lxml")
+    tags_a = soup.find_all("a")
+    for a in tags_a:
+        links.add(a.get("href"))
+
+
+
+def write_links_in_file(): ...
+
+
+def controller(url) -> None:
+    searching_links_and_add(get_html(url))
+    while len(links.get()) > 0:
+        break
+    for n in range(10):
+        print(links.get())
+        print(f"отрработало {n} раз")
+        for path in links.get():
+            searching_links_and_add(get_html(url, path_url=path))
+    else:
+        print(links.get())
 
 
 if __name__ == "__main__":
-    main()
+    links = Links()
+    controller(domain)
 
-    # url_paths_list = []
-    #
-    # result = []
-    # domain = "https://wwwww.jodi.org/"
-    # for link in Collection_links(domain):
-    #     url_paths_list.append(link)
-    # else:
-    #     result.append(url_paths_list)
-    #
-    #
-    # for url_path in set(url_paths_list):
-    #     for link in Collection_links(domain, url_path):
-    #         result.append(link)
-    #
-    # print(result)
+    # код мена с чата
+    # controller_class = Controller([domain])
+    # controller.run()
