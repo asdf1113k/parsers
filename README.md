@@ -1,4 +1,4 @@
-# [collection_links.py](collection_links.py)
+# [ParserLinks.py](ParserLinks.py)
 ## сделать
 
 запоминание предыдущего путя парсинга.
