@@ -1,60 +1,52 @@
-# парсер ссылок с домена wwwww.jodi.org
+# парсер с рекурсивным парсингом ссылок и без него V2
 
-import requests as rq
+from requests import get
+
 from bs4 import BeautifulSoup
 
-domain = "https://wwwww.jodi.org/"
-
-
-class ParserLinks:
-    def __init__(self, url: str):
-        self.links:list = []
-        self.used_links = set()
-        self.url :str   = url
-        self.html:str   = self.get_html(url)
-
-    def get_html(self, url, plus_url=""):
-        if f'{url}{plus_url}' in self.used_links:
-            return "<html> </html>"
-            
-
-        if rq.get(f'{url}{plus_url}').text == 200:
-            self.used_links.add(f'{self.url}{plus_url}')
-            return rq.get(f'{url}{plus_url}').text
-        else:
-            return "<html> </html>"
+class Parser:
+    def __init__(self, url, recursion_search: bool=False):
+        self.url = url
+        self.html = ""
+        self.links = []
+        self.cheaking_links = set()
+        self.count_recursion = 300
+        self.count_get_html = 0
+    
+    def get_html(self, url):
+        self.count_get_html += 1
+    
+        response = get(url)
+        if 200< response.status_code < 399:
+            if url not in self.cheaking_links:
+                self.html = response.text
+                self.cheaking_links.add(response.url)
+            else:
+                self.html = "<html></html>"
+                return
 
     def search_links(self):
         soup = BeautifulSoup(self.html, "lxml")
+        for tag in soup.find_all():
+            if tag.get("href") is None:
+                continue
+            if f"{self.url}{tag.get('href')}" not in self.cheaking_links:
+                self.links.append(f"{self.url}{tag.get('href')}")
 
-        tags_a = soup.find_all("a")
-        for tag_a in tags_a:
-            self.links.append(tag_a.get("href"))
-
+                
+    
     def run(self):
+        self.get_html(self.url)
         self.search_links()
+        # while len(self.links) > 0:
+            # recursion_links = self.links
+            # for link in recursion_links:
+                
 
-        while len(self.links) > 0:
-            self.html = self.get_html(self.url, self.links[0])
-            self.links.pop(0)
-            self.search_links()
-            print(f'спарсено ссылок: {len(self.used_links)}')
-            print(f'спарсеные ссылки: {self.used_links}')
-
-
-
+            
 if __name__ == "__main__":
-    parser = ParserLinks(domain)
-    parser.run()
-    print(parser.url)
-    print(parser.links)
-    print(parser.used_links)
+    ...
+ 
 
 
-    # мой старый код
-    # links = Links()
-    # controller(domain)
-
-    # код мена с чата
-    # controller_class = Controller([domain])
-    # controller.run()
+        

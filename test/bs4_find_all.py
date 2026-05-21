@@ -6,7 +6,7 @@ response = requests.get("https://google.com")
 
 soup = BeautifulSoup(response.text, "lxml")
 for tag in soup.find_all():
-    print(tag.get("href"))
+    print(type(tag.get("href")))  #
 
 
 # я узнал что find_all без параметров возвращает <class 'bs4.element.ResultSet'>
