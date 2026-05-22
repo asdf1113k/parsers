@@ -1,21 +1,15 @@
 # [ParserLinks.py](ParserLinks.py)
 ## сделать
 
-запоминание предыдущего путя парсинга.
-
-пример чтоб было понятнее. 
-
-некоторые ссылки выглядят так `https://wwwww.jodi.org/../cache/index.html` так они выглядят потому что вторая часть взятая с href говорит что относительно того пути где эта ссылка была нажата/взята
-
+объединить парсеры в один модуль parsers
 
 ## идея 
 сделать такой синтаксис для вызова класса
 ```
-if __name__ == "__main__":
+from parsers import ParserLinks
     url = "https://google.com"
     ParserLinks(url, recursiv_search=True)
-    print(ParserLinks.links) # вывод список с ссылками
+    print(ParserLinks.links()) # вывод список с ссылками
 ```
 + `+` не надо вызывать метод ParserLinks.run() сразу получаешь ссылки
 
-в дальнейшем объединить парсеры в один класс Parser
