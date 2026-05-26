@@ -100,24 +100,28 @@ class ParserLinks(Parser):
     ) -> None:
 
         super().__init__(url, auto_run=auto_run)
-        self.__link_queue = []
-        self.__cheaking_links = set()
-        self.__links_included_in_get_html = set()
-        self.external_links = set() # 'external' переводится как 'внешние'
+        self._link_queue = []
+        self._cheaking_links = set()
+        self._links_included_in_get_html = set()
+        self._external_links = set() # 'external' переводится как 'внешние'
         self.recursion_search: bool = recursion_search
 
         if self.auto_run:
             self.run()
     
-    def get_html(self, url) -> None:
+    def get_html(self, url) -> str:
+        """
+        запрашует html page по указаному url
+        пример url - 'https://wwww.site.com/'
+        """
         self.count_get_html += 1
-        self.__remove_url_from_queue(url)
+        self._remove_url_from_queue(url)
         # вот делается удаление, потом в очередь опять добавляются ссылки в search_links
         response: Response = get(url, allow_redirects=True)
         
     
         if 200 <= response.status_code <= 399:
-            if url not in self.__cheaking_links:
+            if url not in self._cheaking_links:
 
                 self.entry_in_the_logs(
                     Fore.BLUE +
@@ -125,9 +129,11 @@ class ParserLinks(Parser):
                 )
 
                 self.html: str = response.text
-                self.__cheaking_links.add(response.url)
+                self._cheaking_links.add(response.url)
+                return self.html
         else:
-            self.html = "<html></html>"
+            self.html = response.text
+            return self.html
 
     def search_links(self) -> None:
         """делает поиск ссылок по html page которую присылает 'get_html()'
@@ -149,35 +155,42 @@ class ParserLinks(Parser):
 
             if (
                 value_href.startswith("https://", 0, 8) # type: ignore
-                or value_href.startswith("http://", 0, 8)  # type: ignore
+                or value_href.startswith("http://", 0, 8) # type: ignore
+                and value_href not in self._external_links
                 ): 
+
                 self.entry_in_the_logs(
                 Fore.YELLOW +
                 f"({self}.{self.search_links.__name__}): найдена ссылка на другой ресурс {value_href}",
                 )
-
+                self._external_links.add(value_href)
                 
 
             if (
-                f"{self.url}{value_href}" not in self.__cheaking_links
-                and f"{self.url}{value_href}" not in self.__links_included_in_get_html
-                and f"{self.url}{value_href}" not in self.__link_queue
+                f"{self.url}{value_href}" not in self._cheaking_links
+                and f"{self.url}{value_href}" not in self._links_included_in_get_html
+                and f"{self.url}{value_href}" not in self._link_queue
             ):
                 self.entry_in_the_logs(
                 Fore.GREEN +
                 f"(search_links): найдена ссылка {self.url}{value_href}",
                 )
 
-                self.__link_queue.append(f"{self.url}{value_href}")
+                self._link_queue.append(f"{self.url}{value_href}")
 
-    def __remove_url_from_queue(self, url) -> None:
+
+    def links(self):
+        return self._cheaking_links
+
+
+
+    def _remove_url_from_queue(self, url) -> None:
         """удаляет ссылки, которые уже проверены, из очереди на парсинг"""
 
-        if url in self.__link_queue:
-            self.__link_queue.remove(url)
+        if url in self._link_queue:
+            self._link_queue.remove(url)
         
-        self.__links_included_in_get_html.add(url)
-        # (done) сделать удаление тех ссылок из link_queue которые есть в cheaking_links
+        self._links_included_in_get_html.add(url)
 
     def run(self) -> None:
         self.get_html(self.url)
@@ -185,30 +198,29 @@ class ParserLinks(Parser):
         if not self.recursion_search:
             return
 
-        while len(self.__link_queue) > 0:
+        while len(self._link_queue) > 0:
 
+            recursion_links = self._link_queue
+            for link in recursion_links:
+                self.get_html(link)
+                self.search_links()
+                
+
+        else:
+            
             self.entry_in_the_logs(
                 f"запросов сделано            : {self.count_get_html}"
             )
 
             self.entry_in_the_logs(
-                f"ссылок на очередь парсинга  : {len(self.__link_queue)}"
+                f"ссылок на очередь парсинга  : {len(self._link_queue)}"
             )
 
-            self.entry_in_the_logs(f"links :{self.__link_queue}")
+            self.entry_in_the_logs(f"links :{self._link_queue}")
 
-            self.entry_in_the_logs(f"спарсеные ссылки            : {len(self.__cheaking_links)}")
+            self.entry_in_the_logs(f"спарсеные ссылки            : {len(self._cheaking_links)}")
             
         
-            
-    
-            recursion_links = self.__link_queue
-            for link in recursion_links:
-                self.get_html(link)
-                self.search_links()
-                # self.is_check_links_in_link_queue()
-                # не сработает его надо ставить в get_html
-
 
 class ParserClasses(Parser):
     def __init__(self, url: str):
@@ -261,7 +273,6 @@ if __name__ == "__main__":
         pass
     # print(dir(parser))
     print(parser.log)
-    parser.recursion_search
     end = time()
     print(f"'ParserLinks' время работы: {end - start}")
 
